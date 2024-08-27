@@ -1,0 +1,61 @@
+import fitz
+from collections import Counter
+
+def get_font_sizes(pdf_path, start_page, end_page):
+    # Open the PDF file
+    doc = fitz.open(pdf_path)
+    
+    # List to store all font sizes
+    font_sizes = []
+
+    for page_num in range(start_page, end_page + 1):
+        page = doc.load_page(page_num)
+        blocks = page.get_text("dict")["blocks"]
+
+        # Iterate through the text blocks to find font sizes
+        for block in blocks:
+            if "lines" in block:  # Check if the block contains text lines
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        font_sizes.append(span['size'])
+
+    doc.close()
+    return font_sizes
+
+def extract_headers_from_pdf(pdf_path, start_page, end_page):
+    # Get font sizes from the specified pages
+    font_sizes = get_font_sizes(pdf_path, start_page, end_page)
+
+    # Find the most common font size
+    common_font_size = Counter(font_sizes).most_common(1)[0][0]
+    
+    # Open the PDF file
+    doc = fitz.open(pdf_path)
+
+    # List to store headers
+    headers = []
+
+    for page_num in range(start_page, end_page + 1):
+        page = doc.load_page(page_num)
+        blocks = page.get_text("dict")["blocks"]
+
+        # Iterate through the text blocks to find headers
+        for block in blocks:
+            if "lines" in block:  # Check if the block contains text lines
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        # Check font size to identify headers (this is a heuristic)
+                        if span['size'] > common_font_size + 2:  # Assuming headers have a font size larger than normal + 2 points
+                            headers.append((page_num + 1, span['text']))
+                            break
+
+    doc.close()
+    return headers
+
+# Use the function to extract headers from pages 16 to 42
+pdf_path = 'file.pdf' #change this
+start_page= 16 #change this
+end_page= 42 #change this
+headers = extract_headers_from_pdf(pdf_path, start_page, end_page)
+
+headers
